@@ -1,10 +1,10 @@
 mod error;
 
 pub use error::PsCypherError;
+pub use ps_deflate::Compressor;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
-use ps_deflate::Compressor;
 
 pub struct Encrypted {
     pub bytes: Vec<u8>,
