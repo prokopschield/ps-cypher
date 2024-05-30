@@ -5,11 +5,12 @@ pub use ps_deflate::Compressor;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
+use ps_hash::Hash;
 
 pub struct Encrypted {
     pub bytes: Vec<u8>,
-    pub hash: String,
-    pub key: String,
+    pub hash: Hash,
+    pub key: Hash,
 }
 
 const KSIZE: usize = 32;
@@ -30,7 +31,7 @@ pub fn parse_key(key: &[u8]) -> ([u8; KSIZE], [u8; NSIZE]) {
 pub fn encrypt(data: &[u8], compressor: &Compressor) -> Result<Encrypted, PsCypherError> {
     let compressed_data = compressor.compress(data)?;
     let hash_of_raw_data = ps_hash::hash(data);
-    let (encryption_key, nonce) = parse_key(&hash_of_raw_data.as_bytes());
+    let (encryption_key, nonce) = parse_key(hash_of_raw_data.as_bytes());
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let encrypted_data = chacha.encrypt(&nonce.into(), compressed_data.as_ref())?;
     let hash_of_encrypted_data = ps_hash::hash(&encrypted_data);
