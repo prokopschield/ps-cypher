@@ -1,13 +1,11 @@
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum PsCypherError {
-    PsDeflateError(ps_deflate::PsDeflateError),
-    ChaChaError,
-}
+use thiserror::Error;
 
-impl From<ps_deflate::PsDeflateError> for PsCypherError {
-    fn from(error: ps_deflate::PsDeflateError) -> Self {
-        PsCypherError::PsDeflateError(error)
-    }
+#[derive(Error, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum PsCypherError {
+    #[error(transparent)]
+    PsDeflateError(#[from] ps_deflate::PsDeflateError),
+    #[error("Encryption/Decryption failure (from chacha20poly1305)")]
+    ChaChaError,
 }
 
 impl From<chacha20poly1305::Error> for PsCypherError {
