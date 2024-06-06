@@ -6,6 +6,7 @@ pub use ps_deflate::Compressor;
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
 use ps_hash::Hash;
+use ps_pint16::PackedInt;
 
 pub struct Encrypted {
     pub bytes: Vec<u8>,
@@ -48,8 +49,10 @@ pub fn decrypt(data: &[u8], key: &[u8], compressor: &Compressor) -> Result<Vec<u
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let compressed_data = chacha.decrypt(&nonce.into(), data)?;
 
-    let out_size_vec = ps_base64::decode(&key[36..38]);
-    let out_size = ((out_size_vec[0] as usize) << 8) + (out_size_vec[1] as usize);
+    let out_size = &key[48..50];
+    let out_size = ps_base64::decode(out_size);
+    let out_size = out_size[0..2].try_into()?;
+    let out_size = PackedInt::from_12_bits(out_size).to_usize();
 
     Ok(compressor.decompress(&compressed_data, out_size)?)
 }
