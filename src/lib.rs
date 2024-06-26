@@ -38,11 +38,13 @@ pub fn encrypt(data: &[u8], compressor: &Compressor) -> Result<Encrypted, PsCyph
     let encrypted_data = chacha.encrypt(&nonce.into(), compressed_data.as_ref())?;
     let hash_of_encrypted_data = ps_hash::hash(&encrypted_data);
 
-    Ok(Encrypted {
+    let encrypted = Encrypted {
         bytes: encrypted_data,
         hash: hash_of_encrypted_data.into(),
         key: hash_of_raw_data.into(),
-    })
+    };
+
+    Ok(encrypted)
 }
 
 pub fn decrypt(data: &[u8], key: &[u8], compressor: &Compressor) -> Result<Vec<u8>, PsCypherError> {
