@@ -1,7 +1,7 @@
 [package]
 name = "ps-cypher"
 description = "Chacha-based data cypher"
-version = "0.1.0-5"
+version = "0.1.0-6"
 edition = "2021"
 license = "GPL-3.0-or-later"
 
