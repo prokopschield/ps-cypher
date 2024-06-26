@@ -7,11 +7,12 @@ use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
 use ps_hash::Hash;
 use ps_pint16::PackedInt;
+use std::sync::Arc;
 
 pub struct Encrypted {
     pub bytes: Vec<u8>,
-    pub hash: Hash,
-    pub key: Hash,
+    pub hash: Arc<Hash>,
+    pub key: Arc<Hash>,
 }
 
 const KSIZE: usize = 32;
@@ -39,8 +40,8 @@ pub fn encrypt(data: &[u8], compressor: &Compressor) -> Result<Encrypted, PsCyph
 
     Ok(Encrypted {
         bytes: encrypted_data,
-        hash: hash_of_encrypted_data,
-        key: hash_of_raw_data,
+        hash: hash_of_encrypted_data.into(),
+        key: hash_of_raw_data.into(),
     })
 }
 
