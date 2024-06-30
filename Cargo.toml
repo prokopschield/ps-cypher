@@ -15,6 +15,6 @@ opt-level = 3
 chacha20poly1305 = "0.10.1"
 ps-base64 = "0.1.0-2"
 ps-deflate = "0.1.0-5"
-ps-hash = "0.1.0-7"
+ps-hash = "0.1.0-8"
 ps-pint16 = "0.1.0-2"
 thiserror = "1.0.61"
