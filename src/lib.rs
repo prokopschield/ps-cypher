@@ -1,6 +1,7 @@
 mod error;
 
 pub use error::PsCypherError;
+pub use ps_buffer::Buffer;
 pub use ps_deflate::Compressor;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
@@ -47,7 +48,7 @@ pub fn encrypt(data: &[u8], compressor: &Compressor) -> Result<Encrypted, PsCyph
     Ok(encrypted)
 }
 
-pub fn decrypt(data: &[u8], key: &[u8], compressor: &Compressor) -> Result<Vec<u8>, PsCypherError> {
+pub fn decrypt(data: &[u8], key: &[u8], compressor: &Compressor) -> Result<Buffer, PsCypherError> {
     let (encryption_key, nonce) = parse_key(key);
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let compressed_data = chacha.decrypt(&nonce.into(), data)?;
@@ -90,8 +91,8 @@ mod tests {
         );
 
         assert_eq!(
-            original_data.to_vec(),
-            decrypted_data,
+            original_data,
+            &decrypted_data[..],
             "Decryption should reverse encryption"
         );
 
