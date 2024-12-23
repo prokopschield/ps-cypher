@@ -29,7 +29,7 @@ pub fn parse_key(key: &[u8]) -> ([u8; KSIZE], [u8; NSIZE]) {
     encryption_key.copy_from_slice(&raw_key[0..KSIZE]);
     nonce.copy_from_slice(&raw_key[raw_key.len() - NSIZE..raw_key.len()]);
 
-    return (encryption_key, nonce);
+    (encryption_key, nonce)
 }
 
 pub fn encrypt(data: &[u8], compressor: &Compressor) -> Result<Encrypted, PsCypherError> {
