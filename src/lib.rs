@@ -8,6 +8,7 @@ use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
 use ps_hash::Hash;
 use ps_pint16::PackedInt;
+use std::ops::Deref;
 use std::sync::Arc;
 
 pub struct Encrypted {
@@ -59,6 +60,20 @@ pub fn decrypt(data: &[u8], key: &[u8], compressor: &Compressor) -> Result<Buffe
     let out_size = PackedInt::from_12_bits(out_size).to_usize();
 
     Ok(compressor.decompress(&compressed_data, out_size)?)
+}
+
+impl AsRef<[u8]> for Encrypted {
+    fn as_ref(&self) -> &[u8] {
+        self
+    }
+}
+
+impl Deref for Encrypted {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
 }
 
 #[cfg(test)]
