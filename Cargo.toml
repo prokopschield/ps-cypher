@@ -1,7 +1,7 @@
 [package]
 name = "ps-cypher"
 description = "Chacha-based data cypher"
-version = "0.1.0-9"
+version = "0.1.0-10"
 edition = "2021"
 license = "GPL-3.0-or-later"
 
@@ -14,8 +14,8 @@ opt-level = 3
 [dependencies]
 chacha20poly1305 = "0.10.1"
 ps-base64 = "0.1.0-3"
-ps-buffer = "0.1.0-3"
-ps-deflate = "0.1.0-7"
+ps-buffer = "0.1.0-4"
+ps-deflate = "0.1.0-8"
 ps-hash = "0.1.0-10"
 ps-pint16 = "0.1.0-3"
 thiserror = "1.0.61"
