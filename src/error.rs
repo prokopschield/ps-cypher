@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-#[derive(Error, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum PsCypherError {
     #[error(transparent)]
     PsDeflateError(#[from] ps_deflate::PsDeflateError),
