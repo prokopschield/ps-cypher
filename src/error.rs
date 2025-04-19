@@ -15,12 +15,12 @@ pub enum PsCypherError {
 
 impl From<chacha20poly1305::Error> for PsCypherError {
     fn from(_error: chacha20poly1305::Error) -> Self {
-        PsCypherError::ChaChaError
+        Self::ChaChaError
     }
 }
 
 impl From<std::array::TryFromSliceError> for PsCypherError {
     fn from(_: std::array::TryFromSliceError) -> Self {
-        PsCypherError::TryFromSliceError
+        Self::TryFromSliceError
     }
 }

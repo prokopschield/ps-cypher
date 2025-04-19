@@ -20,6 +20,7 @@ pub struct Encrypted {
 const KSIZE: usize = 32;
 const NSIZE: usize = 12;
 
+#[must_use]
 pub fn parse_key(key: &[u8]) -> ([u8; KSIZE], [u8; NSIZE]) {
     let raw_key = ps_base64::decode(key);
 
