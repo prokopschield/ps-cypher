@@ -1,7 +1,6 @@
 mod error;
 
-use error::ParseKeyError;
-pub use error::PsCypherError;
+pub use error::{DecryptionError, EncryptionError, ParseKeyError, PsCypherError};
 pub use ps_buffer::Buffer;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
@@ -61,7 +60,7 @@ pub fn parse_key<K: AsRef<[u8]>>(key: K) -> Result<ParsedKey, ParseKeyError> {
 /// - [`PsCypherError::PsDeflateError`] is returned if compression fails.
 /// - [`PsCypherError::ChaChaError`] is returned if encryption fails.
 /// - [`PsCypherError::HashError`] is returned if hashing fails.
-pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, PsCypherError> {
+pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
     let compressed_data = compress(data.as_ref())?;
     let hash_of_raw_data = ps_hash::hash(data)?;
 
@@ -89,7 +88,7 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, PsCypherError> {
 /// [`PsCypherError::ChaChaError`] is returned if decryption fails.
 /// [`PsCypherError::ParseKeyError`] is returned if `key` is malformed.
 /// [`PsCypherError::PsDeflateError`] is returned if decompression fails.
-pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer, PsCypherError> {
+pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer, DecryptionError> {
     let ParsedKey {
         key: encryption_key,
         length: out_size,
@@ -207,7 +206,7 @@ mod tests {
         let result = decrypt(&encrypted, different_key);
         assert!(result.is_err());
         match result.unwrap_err() {
-            PsCypherError::ChaChaError => {} // Expected error type.
+            DecryptionError::ChaChaError => {} // Expected error type.
             _ => panic!("Unexpected error type"),
         }
     }
@@ -221,7 +220,7 @@ mod tests {
         let result = decrypt(&encrypted, encrypted.key.as_bytes());
         assert!(result.is_err());
         match result.unwrap_err() {
-            PsCypherError::ChaChaError => {} // Expected error type.
+            DecryptionError::ChaChaError => {} // Expected error type.
             _ => panic!("Unexpected error type"),
         }
     }

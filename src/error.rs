@@ -2,6 +2,7 @@
 
 use std::{array::TryFromSliceError, num::TryFromIntError};
 
+use ps_deflate::PsDeflateError;
 use ps_hash::HashError;
 use thiserror::Error;
 
@@ -15,28 +16,44 @@ pub enum ParseKeyError {
     TryFromSliceError(#[from] TryFromSliceError),
 }
 
-#[derive(Error, Debug, Clone)]
-pub enum PsCypherError {
-    #[error(transparent)]
-    PsDeflateError(#[from] ps_deflate::PsDeflateError),
+#[derive(Clone, Debug, Error)]
+pub enum EncryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
     ChaChaError,
     #[error(transparent)]
     HashError(#[from] HashError),
     #[error(transparent)]
     ParseKeyError(#[from] ParseKeyError),
-    #[error("Reading from a slice failed.")]
-    TryFromSliceError,
+    #[error(transparent)]
+    PsDeflateError(#[from] PsDeflateError),
 }
 
-impl From<chacha20poly1305::Error> for PsCypherError {
+#[derive(Clone, Debug, Error)]
+pub enum DecryptionError {
+    #[error("Encryption/Decryption failure (from chacha20poly1305)")]
+    ChaChaError,
+    #[error(transparent)]
+    ParseKeyError(#[from] ParseKeyError),
+    #[error(transparent)]
+    PsDeflateError(#[from] PsDeflateError),
+}
+
+#[derive(Error, Debug, Clone)]
+pub enum PsCypherError {
+    #[error(transparent)]
+    DecryptionError(#[from] DecryptionError),
+    #[error(transparent)]
+    EncryptionError(#[from] EncryptionError),
+}
+
+impl From<chacha20poly1305::Error> for EncryptionError {
     fn from(_error: chacha20poly1305::Error) -> Self {
         Self::ChaChaError
     }
 }
 
-impl From<std::array::TryFromSliceError> for PsCypherError {
-    fn from(_: std::array::TryFromSliceError) -> Self {
-        Self::TryFromSliceError
+impl From<chacha20poly1305::Error> for DecryptionError {
+    fn from(_error: chacha20poly1305::Error) -> Self {
+        Self::ChaChaError
     }
 }
