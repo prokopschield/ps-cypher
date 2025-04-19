@@ -6,19 +6,22 @@ pub use ps_buffer::Buffer;
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
 use ps_deflate::{compress, decompress};
+use ps_ecc::{decode, encode};
 use ps_hash::Hash;
 use ps_pint16::PackedInt;
 use std::ops::Deref;
 use std::sync::Arc;
 
 pub struct Encrypted {
-    pub bytes: Vec<u8>,
+    pub bytes: Buffer,
     pub hash: Arc<Hash>,
     pub key: Arc<Hash>,
 }
 
 const KSIZE: usize = 32;
 const NSIZE: usize = 12;
+
+const PARITY: u8 = 12;
 
 pub struct ParsedKey {
     key: [u8; KSIZE],
@@ -72,11 +75,13 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
 
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let encrypted_data = chacha.encrypt(&nonce.into(), compressed_data.as_ref())?;
-    let hash_of_encrypted_data = ps_hash::hash(&encrypted_data)?;
+
+    let bytes = encode(&encrypted_data, PARITY)?;
+    let hash = Hash::hash(&bytes)?.into();
 
     let encrypted = Encrypted {
-        bytes: encrypted_data,
-        hash: hash_of_encrypted_data.into(),
+        bytes,
+        hash,
         key: hash_of_raw_data.into(),
     };
 
@@ -95,8 +100,9 @@ pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer
         nonce,
     } = parse_key(key)?;
 
+    let ecc_decoded = decode(data.as_ref(), PARITY)?;
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
-    let compressed_data = chacha.decrypt(&nonce.into(), data.as_ref())?;
+    let compressed_data = chacha.decrypt(&nonce.into(), &ecc_decoded[..])?;
 
     Ok(decompress(&compressed_data, out_size)?)
 }
@@ -118,6 +124,7 @@ impl Deref for Encrypted {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {
+    use ps_buffer::ToBuffer;
     use ps_hash::hash;
 
     use super::*;
@@ -131,14 +138,14 @@ mod tests {
         let decrypted_data = decrypt(&encrypted_data.bytes, encrypted_data.key.as_bytes())?;
 
         assert_ne!(
-            original_data.to_vec(),
+            original_data.to_buffer().unwrap(),
             encrypted_data.bytes,
             "Encryption should modify the data"
         );
 
         assert_eq!(
             encrypted_data.bytes.len(),
-            31,
+            31 + 2 * usize::from(PARITY),
             "Encrypted data should be 31 bytes long"
         );
 
@@ -212,17 +219,17 @@ mod tests {
     }
 
     #[test]
-    fn test_encrypt_decrypt_tampered_data() {
+    fn test_encrypt_decrypt_tampered_data() -> Result<(), PsCypherError> {
         let data = b"This is some data";
         let mut encrypted = encrypt(data).unwrap();
         // Tamper with the encrypted data
         encrypted.bytes[0] ^= 0x01; // Flip a bit
-        let result = decrypt(&encrypted, encrypted.key.as_bytes());
-        assert!(result.is_err());
-        match result.unwrap_err() {
-            DecryptionError::ChaChaError => {} // Expected error type.
-            _ => panic!("Unexpected error type"),
-        }
+
+        let decrypted = decrypt(&encrypted, encrypted.key.as_bytes())?;
+
+        assert_eq!(decrypted.slice(..), data);
+
+        Ok(())
     }
 
     #[test]

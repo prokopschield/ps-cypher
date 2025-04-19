@@ -3,6 +3,7 @@
 use std::{array::TryFromSliceError, num::TryFromIntError};
 
 use ps_deflate::PsDeflateError;
+use ps_ecc::DecodeError;
 use ps_hash::HashError;
 use thiserror::Error;
 
@@ -21,6 +22,8 @@ pub enum EncryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
     ChaChaError,
     #[error(transparent)]
+    EccError(#[from] ps_ecc::EncodeError),
+    #[error(transparent)]
     HashError(#[from] HashError),
     #[error(transparent)]
     ParseKeyError(#[from] ParseKeyError),
@@ -32,6 +35,8 @@ pub enum EncryptionError {
 pub enum DecryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
     ChaChaError,
+    #[error(transparent)]
+    EccError(#[from] DecodeError),
     #[error(transparent)]
     ParseKeyError(#[from] ParseKeyError),
     #[error(transparent)]
