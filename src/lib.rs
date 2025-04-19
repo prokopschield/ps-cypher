@@ -1,5 +1,6 @@
 mod error;
 
+use error::ParseKeyError;
 pub use error::PsCypherError;
 pub use ps_buffer::Buffer;
 
@@ -20,23 +21,46 @@ pub struct Encrypted {
 const KSIZE: usize = 32;
 const NSIZE: usize = 12;
 
-#[must_use]
-pub fn parse_key<K: AsRef<[u8]>>(key: K) -> ([u8; KSIZE], [u8; NSIZE]) {
-    let raw_key = ps_base64::decode(key.as_ref());
+pub struct ParsedKey {
+    key: [u8; KSIZE],
+    nonce: [u8; NSIZE],
+    length: usize,
+}
 
-    let mut encryption_key = [0u8; KSIZE];
-    let mut nonce = [0u8; NSIZE];
+pub fn parse_key<K: AsRef<[u8]>>(key: K) -> Result<ParsedKey, ParseKeyError> {
+    let key = key.as_ref();
 
-    encryption_key.copy_from_slice(&raw_key[0..KSIZE]);
-    nonce.copy_from_slice(&raw_key[raw_key.len() - NSIZE..raw_key.len()]);
+    let key = if key.len() > ps_hash::HASH_SIZE_TOTAL_BIN {
+        &ps_base64::decode(key)
+    } else {
+        key
+    };
 
-    (encryption_key, nonce)
+    let len = key.len().min(48);
+
+    if len < 34 {
+        return Err(ParseKeyError::InsufficientKeyLength(len.try_into()?));
+    }
+
+    let parsed = ParsedKey {
+        key: key[0..32].try_into()?,
+        length: PackedInt::from_16_bits(key[32..34].try_into()?).to_usize(),
+        nonce: key[len - NSIZE..len].try_into()?,
+    };
+
+    Ok(parsed)
 }
 
 pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, PsCypherError> {
     let compressed_data = compress(data.as_ref())?;
     let hash_of_raw_data = ps_hash::hash(data)?;
-    let (encryption_key, nonce) = parse_key(hash_of_raw_data.as_bytes());
+
+    let ParsedKey {
+        key: encryption_key,
+        length: _,
+        nonce,
+    } = parse_key(hash_of_raw_data.as_bytes())?;
+
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let encrypted_data = chacha.encrypt(&nonce.into(), compressed_data.as_ref())?;
     let hash_of_encrypted_data = ps_hash::hash(&encrypted_data)?;
@@ -51,15 +75,14 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, PsCypherError> {
 }
 
 pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer, PsCypherError> {
-    let key = key.as_ref();
-    let (encryption_key, nonce) = parse_key(key);
+    let ParsedKey {
+        key: encryption_key,
+        length: out_size,
+        nonce,
+    } = parse_key(key)?;
+
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let compressed_data = chacha.decrypt(&nonce.into(), data.as_ref())?;
-
-    let out_size = &key[40..46];
-    let out_size = ps_base64::decode(out_size);
-    let out_size = out_size[2..4].try_into()?;
-    let out_size = PackedInt::from_16_bits(out_size).to_usize();
 
     Ok(decompress(&compressed_data, out_size)?)
 }
