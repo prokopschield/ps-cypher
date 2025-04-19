@@ -27,6 +27,11 @@ pub struct ParsedKey {
     length: usize,
 }
 
+/// Parses an encryption key.
+/// # Parameters
+/// - `key` can be either 48 bytes of 64 base-64 chars.
+/// # Errors
+/// - [`ParseKeyError::InsufficientKeyLength`] is returned if fewer then 34 bytes are provided.
 pub fn parse_key<K: AsRef<[u8]>>(key: K) -> Result<ParsedKey, ParseKeyError> {
     let key = key.as_ref();
 
@@ -51,6 +56,11 @@ pub fn parse_key<K: AsRef<[u8]>>(key: K) -> Result<ParsedKey, ParseKeyError> {
     Ok(parsed)
 }
 
+/// Encrypts a message.
+/// # Errors
+/// - [`PsCypherError::PsDeflateError`] is returned if compression fails.
+/// - [`PsCypherError::ChaChaError`] is returned if encryption fails.
+/// - [`PsCypherError::HashError`] is returned if hashing fails.
 pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, PsCypherError> {
     let compressed_data = compress(data.as_ref())?;
     let hash_of_raw_data = ps_hash::hash(data)?;
@@ -74,6 +84,11 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, PsCypherError> {
     Ok(encrypted)
 }
 
+/// Attempts the decryption of encrypted data.
+/// # Errors
+/// [`PsCypherError::ChaChaError`] is returned if decryption fails.
+/// [`PsCypherError::ParseKeyError`] is returned if `key` is malformed.
+/// [`PsCypherError::PsDeflateError`] is returned if decompression fails.
 pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer, PsCypherError> {
     let ParsedKey {
         key: encryption_key,
