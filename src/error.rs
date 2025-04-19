@@ -1,3 +1,4 @@
+use ps_hash::HashError;
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
@@ -6,6 +7,8 @@ pub enum PsCypherError {
     PsDeflateError(#[from] ps_deflate::PsDeflateError),
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
     ChaChaError,
+    #[error(transparent)]
+    HashError(#[from] HashError),
     #[error("Reading from a slice failed.")]
     TryFromSliceError,
 }
