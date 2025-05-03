@@ -6,7 +6,7 @@ pub use ps_buffer::Buffer;
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
 use ps_deflate::{compress, decompress};
-use ps_ecc::{decode, encode};
+use ps_ecc::{decode, encode, Codeword, DecodeError};
 use ps_hash::Hash;
 use ps_pint16::PackedInt;
 use std::ops::Deref;
@@ -100,11 +100,19 @@ pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer
         nonce,
     } = parse_key(key)?;
 
-    let ecc_decoded = decode(data.as_ref(), PARITY)?;
+    let ecc_decoded = extract_encrypted(data.as_ref())?;
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let compressed_data = chacha.decrypt(&nonce.into(), &ecc_decoded[..])?;
 
     Ok(decompress(&compressed_data, out_size)?)
+}
+
+#[inline]
+/// Extracts the raw ChaCha-encrypted content from the provided slice.
+/// # Errors
+/// Returns [`DecodeError`] if `data` is invalid or irrecoverably corrupted.
+pub fn extract_encrypted(data: &[u8]) -> Result<Codeword, DecodeError> {
+    decode(data, PARITY)
 }
 
 impl AsRef<[u8]> for Encrypted {
