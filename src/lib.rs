@@ -12,6 +12,7 @@ use ps_pint16::PackedInt;
 use std::ops::Deref;
 use std::sync::Arc;
 
+#[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Encrypted {
     pub bytes: Buffer,
     pub hash: Arc<Hash>,
@@ -23,6 +24,7 @@ const NSIZE: usize = 12;
 
 const PARITY: u8 = 12;
 
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ParsedKey {
     key: [u8; KSIZE],
     nonce: [u8; NSIZE],
