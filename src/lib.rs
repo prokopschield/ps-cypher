@@ -117,6 +117,29 @@ pub fn extract_encrypted(data: &[u8]) -> Result<Codeword, DecodeError> {
     decode(data, PARITY)
 }
 
+#[inline]
+#[must_use]
+/// Checks whether `data` has been corrupted or tampered with.
+/// 
+/// Returns `true` if the data's checksum is intact and no errors are detected.
+/// 
+/// # Parameters
+/// * `data` - The encrypted data buffer to validate
+/// 
+/// # Examples
+/// ```
+/// # use ps_cypher::{encrypt, validate};
+/// let data = b"important data";
+/// let encrypted = encrypt(data).expect("encryption failed");
+/// assert!(validate(&encrypted));
+/// ```
+pub fn validate<D>(data: D) -> bool
+where
+    D: AsRef<[u8]>,
+{
+    ps_ecc::validate(data.as_ref(), PARITY)
+}
+
 impl AsRef<[u8]> for Encrypted {
     fn as_ref(&self) -> &[u8] {
         self
