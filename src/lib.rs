@@ -120,12 +120,12 @@ pub fn extract_encrypted(data: &[u8]) -> Result<Codeword, DecodeError> {
 #[inline]
 #[must_use]
 /// Checks whether `data` has been corrupted or tampered with.
-/// 
+///
 /// Returns `true` if the data's checksum is intact and no errors are detected.
-/// 
+///
 /// # Parameters
 /// * `data` - The encrypted data buffer to validate
-/// 
+///
 /// # Examples
 /// ```
 /// # use ps_cypher::{encrypt, validate};
