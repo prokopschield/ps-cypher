@@ -113,7 +113,7 @@ pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer
 /// Extracts the raw ChaCha-encrypted content from the provided slice.
 /// # Errors
 /// Returns [`DecodeError`] if `data` is invalid or irrecoverably corrupted.
-pub fn extract_encrypted(data: &[u8]) -> Result<Codeword, DecodeError> {
+pub fn extract_encrypted(data: &[u8]) -> Result<Codeword<'_>, DecodeError> {
     decode(data, PARITY)
 }
 
