@@ -11,9 +11,9 @@ ps-base64 = "0.1.0-5"
 ps-buffer = "0.1.0-20"
 ps-deflate = "0.1.0-15"
 ps-ecc = "0.1.0-7"
-ps-hash = "0.1.0-19"
+ps-hash = "0.1.0-20"
 ps-pint16 = "0.1.0-4"
-thiserror = "2.0.16"
+thiserror = "2.0.17"
 
 [profile.dev]
 opt-level = 3
