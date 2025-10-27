@@ -1,21 +1,9 @@
 #![allow(clippy::module_name_repetitions)]
 
-use std::{array::TryFromSliceError, num::TryFromIntError};
-
 use ps_deflate::PsDeflateError;
 use ps_ecc::DecodeError;
 use ps_hash::HashError;
 use thiserror::Error;
-
-#[derive(Clone, Copy, Debug, Error)]
-pub enum ParseKeyError {
-    #[error("Key length of {0} is insufficient.")]
-    InsufficientKeyLength(u8),
-    #[error(transparent)]
-    TryFromIntError(#[from] TryFromIntError),
-    #[error(transparent)]
-    TryFromSliceError(#[from] TryFromSliceError),
-}
 
 #[derive(Clone, Debug, Error)]
 pub enum EncryptionError {
@@ -26,8 +14,6 @@ pub enum EncryptionError {
     #[error(transparent)]
     HashError(#[from] HashError),
     #[error(transparent)]
-    ParseKeyError(#[from] ParseKeyError),
-    #[error(transparent)]
     PsDeflateError(#[from] PsDeflateError),
 }
 
@@ -37,8 +23,6 @@ pub enum DecryptionError {
     ChaChaError,
     #[error(transparent)]
     EccError(#[from] DecodeError),
-    #[error(transparent)]
-    ParseKeyError(#[from] ParseKeyError),
     #[error(transparent)]
     PsDeflateError(#[from] PsDeflateError),
 }

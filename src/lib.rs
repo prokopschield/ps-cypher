@@ -1,14 +1,14 @@
 mod error;
 
-pub use error::{DecryptionError, EncryptionError, ParseKeyError, PsCypherError};
+pub use error::{DecryptionError, EncryptionError, PsCypherError};
 pub use ps_buffer::Buffer;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
 use ps_deflate::{compress, decompress};
 use ps_ecc::{decode, encode, Codeword, DecodeError};
-use ps_hash::Hash;
-use ps_pint16::PackedInt;
+use ps_hash::{Hash, PARITY_SIZE};
+use ps_util::subarray;
 use std::ops::Deref;
 use std::sync::Arc;
 
@@ -31,33 +31,14 @@ pub struct ParsedKey {
     length: usize,
 }
 
-/// Parses an encryption key.
-/// # Parameters
-/// - `key` can be either 48 bytes of 64 base-64 chars.
-/// # Errors
-/// - [`ParseKeyError::InsufficientKeyLength`] is returned if fewer then 34 bytes are provided.
-pub fn parse_key<K: AsRef<[u8]>>(key: K) -> Result<ParsedKey, ParseKeyError> {
-    let key = key.as_ref();
-
-    let key = if key.len() > ps_hash::HASH_SIZE_TOTAL_BIN {
-        &ps_base64::decode(key)
-    } else {
-        key
-    };
-
-    let len = key.len().min(48);
-
-    if len < 34 {
-        return Err(ParseKeyError::InsufficientKeyLength(len.try_into()?));
+impl From<&Hash> for ParsedKey {
+    fn from(value: &Hash) -> Self {
+        Self {
+            key: *value.digest(),
+            length: value.data_max_len().to_usize(),
+            nonce: *subarray(value.parity(), PARITY_SIZE - NSIZE),
+        }
     }
-
-    let parsed = ParsedKey {
-        key: key[0..32].try_into()?,
-        length: PackedInt::from_16_bits(key[32..34].try_into()?).to_usize(),
-        nonce: key[len - NSIZE..len].try_into()?,
-    };
-
-    Ok(parsed)
 }
 
 /// Encrypts a message.
@@ -73,7 +54,7 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
         key: encryption_key,
         length: _,
         nonce,
-    } = parse_key(hash_of_raw_data.as_bytes())?;
+    } = (&hash_of_raw_data).into();
 
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let encrypted_data = chacha.encrypt(&nonce.into(), compressed_data.as_ref())?;
@@ -93,14 +74,13 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
 /// Attempts the decryption of encrypted data.
 /// # Errors
 /// [`PsCypherError::ChaChaError`] is returned if decryption fails.
-/// [`PsCypherError::ParseKeyError`] is returned if `key` is malformed.
 /// [`PsCypherError::PsDeflateError`] is returned if decompression fails.
-pub fn decrypt<D: AsRef<[u8]>, K: AsRef<[u8]>>(data: D, key: K) -> Result<Buffer, DecryptionError> {
+pub fn decrypt(data: impl AsRef<[u8]>, key: &Hash) -> Result<Buffer, DecryptionError> {
     let ParsedKey {
         key: encryption_key,
         length: out_size,
         nonce,
-    } = parse_key(key)?;
+    } = key.into();
 
     let ecc_decoded = extract_encrypted(data.as_ref())?;
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
@@ -168,7 +148,7 @@ mod tests {
 
         let encrypted_data = encrypt(original_data)?;
 
-        let decrypted_data = decrypt(&encrypted_data.bytes, encrypted_data.key.as_bytes())?;
+        let decrypted_data = decrypt(&encrypted_data.bytes, &encrypted_data.key)?;
 
         assert_ne!(
             original_data.to_buffer().unwrap(),
@@ -198,13 +178,13 @@ mod tests {
 
     #[test]
     fn test_parse_key() {
-        let key_bytes = create_test_key();
+        let key = &create_test_key();
 
         let ParsedKey {
             key: encryption_key,
             length: _,
             nonce,
-        } = parse_key(key_bytes).unwrap();
+        } = key.into();
 
         assert_eq!(encryption_key.len(), 32);
         assert_eq!(nonce.len(), 12);
@@ -217,7 +197,7 @@ mod tests {
     fn test_encrypt_decrypt() {
         let data = b"This is some data to encrypt";
         let encrypted = encrypt(data).unwrap();
-        let decrypted = decrypt(&encrypted, encrypted.key.as_bytes()).unwrap();
+        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
         assert_eq!(&*decrypted, data);
     }
 
@@ -225,7 +205,7 @@ mod tests {
     fn test_encrypt_decrypt_empty_data() {
         let data = b"";
         let encrypted = encrypt(data).unwrap();
-        let decrypted = decrypt(&encrypted, encrypted.key.as_bytes()).unwrap();
+        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
         assert_eq!(&*decrypted, data);
     }
 
@@ -233,7 +213,7 @@ mod tests {
     fn test_encrypt_decrypt_long_data() {
         let data = "This is a very long string to test the encryption and decryption with a large amount of data.  We want to make sure that the compression and decompression work correctly, and that the encryption and decryption can handle a significant amount of data without any issues.  This should be longer than any reasonable message.  Let's add some more to be absolutely sure. And even more, just to be safe.".as_bytes();
         let encrypted = encrypt(data).unwrap();
-        let decrypted = decrypt(&encrypted, encrypted.key.as_bytes()).unwrap();
+        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
         assert_eq!(&*decrypted, data);
     }
 
@@ -243,7 +223,7 @@ mod tests {
         let encrypted = encrypt(data).unwrap();
         let different_key = create_test_key(); // Use a different key.
 
-        let result = decrypt(&encrypted, different_key);
+        let result = decrypt(&encrypted, &different_key);
         assert!(result.is_err());
         match result.unwrap_err() {
             DecryptionError::ChaChaError => {} // Expected error type.
@@ -258,7 +238,7 @@ mod tests {
         // Tamper with the encrypted data
         encrypted.bytes[0] ^= 0x01; // Flip a bit
 
-        let decrypted = decrypt(&encrypted, encrypted.key.as_bytes())?;
+        let decrypted = decrypt(&encrypted, &encrypted.key)?;
 
         assert_eq!(decrypted.slice(..), data);
 
@@ -291,7 +271,7 @@ mod tests {
             key,
             length: _,
             nonce: _,
-        } = parse_key(h.as_bytes()).unwrap();
+        } = (&h).into();
 
         assert_eq!(key.len(), 32);
     }
@@ -301,7 +281,7 @@ mod tests {
         // Create a large amount of data (1MB)
         let data = vec![b'A'; 1024 * 1024];
         let encrypted = encrypt(&data).unwrap();
-        let decrypted = decrypt(&encrypted, encrypted.key.as_bytes()).unwrap();
+        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
         assert_eq!(&*decrypted, &data[..]);
     }
 
@@ -309,12 +289,15 @@ mod tests {
     fn test_ps_cypher_error_display() {
         let data = b"test";
         let encrypted = encrypt(data).unwrap();
-        let bad_key = b"invalid_key";
-        let result = decrypt(&encrypted, bad_key);
+        let bad_key = hash(b"invalid_key").unwrap();
+        let result = decrypt(&encrypted, &bad_key);
 
         if let Err(e) = result {
             let error_message = format!("{e}");
-            assert_eq!(error_message, "Key length of 11 is insufficient."); // Check for a substring.
+            assert_eq!(
+                error_message,
+                "Encryption/Decryption failure (from chacha20poly1305)"
+            ); // Check for a substring.
         } else {
             panic!("Expected an error, but got success");
         }
@@ -324,8 +307,8 @@ mod tests {
     fn test_ps_cypher_error_source() {
         let data = b"test";
         let encrypted = encrypt(data).unwrap();
-        let bad_key = b"invalid_key";
-        let result = decrypt(&encrypted, bad_key);
+        let bad_key = hash(b"invalid_key").unwrap();
+        let result = decrypt(&encrypted, &bad_key);
 
         if let Err(e) = result {
             let source = std::error::Error::source(&e);
