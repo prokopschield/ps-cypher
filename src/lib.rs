@@ -112,12 +112,12 @@ pub fn extract_encrypted(data: &[u8]) -> Result<Codeword<'_>, DecodeError> {
 ///
 /// # Examples
 /// ```
-/// # use ps_cypher::{encrypt, validate};
+/// # use ps_cypher::{encrypt, validate_ecc};
 /// let data = b"important data";
 /// let encrypted = encrypt(data).expect("encryption failed");
-/// assert!(validate(&encrypted));
+/// assert!(validate_ecc(&encrypted));
 /// ```
-pub fn validate(data: &[u8]) -> bool {
+pub fn validate_ecc(data: &[u8]) -> bool {
     ps_ecc::validate(data, PARITY)
 }
 
