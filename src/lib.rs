@@ -57,7 +57,9 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
     } = (&hash_of_raw_data).into();
 
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
-    let encrypted_data = chacha.encrypt(&nonce.into(), compressed_data.as_ref())?;
+    let encrypted_data = chacha
+        .encrypt(&nonce.into(), compressed_data.as_ref())
+        .map_err(|_| EncryptionError::ChaChaError)?;
 
     let bytes = encode(&encrypted_data, PARITY)?;
     let hash = Hash::hash(&bytes)?.into();
@@ -84,7 +86,9 @@ pub fn decrypt(data: impl AsRef<[u8]>, key: &Hash) -> Result<Buffer, DecryptionE
 
     let ecc_decoded = extract_encrypted(data.as_ref())?;
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
-    let compressed_data = chacha.decrypt(&nonce.into(), &ecc_decoded[..])?;
+    let compressed_data = chacha
+        .decrypt(&nonce.into(), &ecc_decoded[..])
+        .map_err(|_| DecryptionError::ChaChaError)?;
 
     Ok(decompress(&compressed_data, out_size)?)
 }

@@ -34,15 +34,3 @@ pub enum PsCypherError {
     #[error(transparent)]
     EncryptionError(#[from] EncryptionError),
 }
-
-impl From<chacha20poly1305::Error> for EncryptionError {
-    fn from(_error: chacha20poly1305::Error) -> Self {
-        Self::ChaChaError
-    }
-}
-
-impl From<chacha20poly1305::Error> for DecryptionError {
-    fn from(_error: chacha20poly1305::Error) -> Self {
-        Self::ChaChaError
-    }
-}
