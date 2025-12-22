@@ -46,8 +46,8 @@ impl From<&Hash> for ParsedKey {
 /// - [`PsCypherError::PsDeflateError`] is returned if compression fails.
 /// - [`PsCypherError::ChaChaError`] is returned if encryption fails.
 /// - [`PsCypherError::HashError`] is returned if hashing fails.
-pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
-    let compressed_data = compress(data.as_ref())?;
+pub fn encrypt(data: &[u8]) -> Result<Encrypted, EncryptionError> {
+    let compressed_data = compress(data)?;
     let hash_of_raw_data = ps_hash::hash(data)?;
 
     let ParsedKey {
@@ -77,14 +77,14 @@ pub fn encrypt<D: AsRef<[u8]>>(data: D) -> Result<Encrypted, EncryptionError> {
 /// # Errors
 /// [`PsCypherError::ChaChaError`] is returned if decryption fails.
 /// [`PsCypherError::PsDeflateError`] is returned if decompression fails.
-pub fn decrypt(data: impl AsRef<[u8]>, key: &Hash) -> Result<Buffer, DecryptionError> {
+pub fn decrypt(data: &[u8], key: &Hash) -> Result<Buffer, DecryptionError> {
     let ParsedKey {
         key: encryption_key,
         length: out_size,
         nonce,
     } = key.into();
 
-    let ecc_decoded = extract_encrypted(data.as_ref())?;
+    let ecc_decoded = extract_encrypted(data)?;
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let compressed_data = chacha
         .decrypt(&nonce.into(), &ecc_decoded[..])
@@ -117,11 +117,8 @@ pub fn extract_encrypted(data: &[u8]) -> Result<Codeword<'_>, DecodeError> {
 /// let encrypted = encrypt(data).expect("encryption failed");
 /// assert!(validate(&encrypted));
 /// ```
-pub fn validate<D>(data: D) -> bool
-where
-    D: AsRef<[u8]>,
-{
-    ps_ecc::validate(data.as_ref(), PARITY)
+pub fn validate(data: &[u8]) -> bool {
+    ps_ecc::validate(data, PARITY)
 }
 
 impl AsRef<[u8]> for Encrypted {
