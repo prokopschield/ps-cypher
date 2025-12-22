@@ -31,6 +31,16 @@ pub struct ParsedKey {
     length: usize,
 }
 
+impl std::fmt::Debug for ParsedKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ParsedKey")
+            .field("key", &"<REDACTED>")
+            .field("nonce", &self.nonce)
+            .field("length", &self.length)
+            .finish()
+    }
+}
+
 impl From<&Hash> for ParsedKey {
     fn from(value: &Hash) -> Self {
         Self {
