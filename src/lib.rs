@@ -24,7 +24,7 @@ const NSIZE: usize = 12;
 
 const PARITY: u8 = 12;
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ParsedKey {
     key: [u8; KSIZE],
     nonce: [u8; NSIZE],
