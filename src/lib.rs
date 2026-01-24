@@ -10,13 +10,12 @@ use ps_ecc::{decode, encode, Codeword, DecodeError};
 use ps_hash::{Hash, PARITY_SIZE};
 use ps_util::subarray;
 use std::ops::Deref;
-use std::sync::Arc;
 
 #[derive(Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Encrypted {
     pub bytes: Buffer,
-    pub hash: Arc<Hash>,
-    pub key: Arc<Hash>,
+    pub hash: Hash,
+    pub key: Hash,
 }
 
 const KSIZE: usize = 32;
@@ -72,12 +71,12 @@ pub fn encrypt(data: &[u8]) -> Result<Encrypted, EncryptionError> {
         .map_err(|_| EncryptionError::ChaChaError)?;
 
     let bytes = encode(&encrypted_data, PARITY)?;
-    let hash = Hash::hash(&bytes)?.into();
+    let hash = Hash::hash(&bytes)?;
 
     let encrypted = Encrypted {
         bytes,
         hash,
-        key: hash_of_raw_data.into(),
+        key: hash_of_raw_data,
     };
 
     Ok(encrypted)
