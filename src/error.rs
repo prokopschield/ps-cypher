@@ -26,11 +26,3 @@ pub enum DecryptionError {
     #[error(transparent)]
     Ecc(#[from] DecodeError),
 }
-
-#[derive(Error, Debug, Clone)]
-pub enum PsCypherError {
-    #[error(transparent)]
-    DecryptionError(#[from] DecryptionError),
-    #[error(transparent)]
-    EncryptionError(#[from] EncryptionError),
-}

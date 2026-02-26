@@ -1,6 +1,6 @@
 mod error;
 
-pub use error::{DecryptionError, EncryptionError, PsCypherError};
+pub use error::{DecryptionError, EncryptionError};
 pub use ps_buffer::Buffer;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
@@ -145,6 +145,7 @@ impl Deref for Encrypted {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use ps_buffer::ToBuffer;
@@ -153,12 +154,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_encrypt_and_decrypt() -> Result<(), PsCypherError> {
+    fn test_encrypt_and_decrypt() {
         let original_data = b"Hello, World!";
 
-        let encrypted_data = encrypt(original_data)?;
+        let encrypted_data = encrypt(original_data).expect("encryption should succeed");
 
-        let decrypted_data = decrypt(&encrypted_data.bytes, &encrypted_data.key)?;
+        let decrypted_data =
+            decrypt(&encrypted_data.bytes, &encrypted_data.key).expect("decryption should succeed");
 
         assert_ne!(
             original_data.to_buffer().unwrap(),
@@ -177,8 +179,6 @@ mod tests {
             &decrypted_data[..],
             "Decryption should reverse encryption"
         );
-
-        Ok(())
     }
 
     // Helper function to create a sample key (for testing purposes)
@@ -242,17 +242,16 @@ mod tests {
     }
 
     #[test]
-    fn test_encrypt_decrypt_tampered_data() -> Result<(), PsCypherError> {
+    fn test_encrypt_decrypt_tampered_data() {
         let data = b"This is some data";
         let mut encrypted = encrypt(data).unwrap();
         // Tamper with the encrypted data
         encrypted.bytes[0] ^= 0x01; // Flip a bit
 
-        let decrypted = decrypt(&encrypted, &encrypted.key)?;
+        let decrypted = decrypt(&encrypted, &encrypted.key)
+            .expect("decryption should succeed after ECC correction");
 
         assert_eq!(decrypted.slice(..), data);
-
-        Ok(())
     }
 
     #[test]
