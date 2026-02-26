@@ -163,7 +163,9 @@ mod tests {
             decrypt(&encrypted_data.bytes, &encrypted_data.key).expect("decryption should succeed");
 
         assert_ne!(
-            original_data.to_buffer().unwrap(),
+            original_data
+                .to_buffer()
+                .expect("conversion to buffer should succeed"),
             encrypted_data.bytes,
             "Encryption should modify the data"
         );
@@ -183,7 +185,7 @@ mod tests {
 
     // Helper function to create a sample key (for testing purposes)
     fn create_test_key() -> Hash {
-        hash("Hello, world!").unwrap()
+        hash("Hello, world!").expect("hashing test key should succeed")
     }
 
     #[test]
@@ -206,31 +208,31 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt() {
         let data = b"This is some data to encrypt";
-        let encrypted = encrypt(data).unwrap();
-        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
+        let decrypted = decrypt(&encrypted, &encrypted.key).expect("decryption should succeed");
         assert_eq!(&*decrypted, data);
     }
 
     #[test]
     fn test_encrypt_decrypt_empty_data() {
         let data = b"";
-        let encrypted = encrypt(data).unwrap();
-        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
+        let decrypted = decrypt(&encrypted, &encrypted.key).expect("decryption should succeed");
         assert_eq!(&*decrypted, data);
     }
 
     #[test]
     fn test_encrypt_decrypt_long_data() {
         let data = "This is a very long string to test the encryption and decryption with a large amount of data.  We want to make sure that the compression and decompression work correctly, and that the encryption and decryption can handle a significant amount of data without any issues.  This should be longer than any reasonable message.  Let's add some more to be absolutely sure. And even more, just to be safe.".as_bytes();
-        let encrypted = encrypt(data).unwrap();
-        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
+        let decrypted = decrypt(&encrypted, &encrypted.key).expect("decryption should succeed");
         assert_eq!(&*decrypted, data);
     }
 
     #[test]
     fn test_encrypt_decrypt_different_key() {
         let data = b"This is some data";
-        let encrypted = encrypt(data).unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
         let different_key = create_test_key(); // Use a different key.
 
         let result = decrypt(&encrypted, &different_key);
@@ -244,7 +246,7 @@ mod tests {
     #[test]
     fn test_encrypt_decrypt_tampered_data() {
         let data = b"This is some data";
-        let mut encrypted = encrypt(data).unwrap();
+        let mut encrypted = encrypt(data).expect("encryption should succeed");
         // Tamper with the encrypted data
         encrypted.bytes[0] ^= 0x01; // Flip a bit
 
@@ -257,7 +259,7 @@ mod tests {
     #[test]
     fn test_as_ref_encrypted() {
         let data = b"Test data";
-        let encrypted = encrypt(data).unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
         let as_ref_data: &[u8] = encrypted.as_ref();
         assert_eq!(as_ref_data, &*encrypted);
         assert_eq!(as_ref_data, &encrypted.bytes[..]);
@@ -266,7 +268,7 @@ mod tests {
     #[test]
     fn test_deref_encrypted() {
         let data = b"More test data";
-        let encrypted = encrypt(data).unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
         let deref_data: &[u8] = &encrypted; // Use the Deref trait
         assert_eq!(deref_data, &encrypted.bytes[..]);
     }
@@ -274,7 +276,7 @@ mod tests {
     #[test]
     fn test_key_from_hash() {
         let data = b"Test data for key derivation";
-        let h = hash(data).unwrap();
+        let h = hash(data).expect("hashing should succeed");
 
         let ParsedKey {
             key,
@@ -289,16 +291,16 @@ mod tests {
     fn test_encrypt_large_data() {
         // Create a large amount of data (1MB)
         let data = vec![b'A'; 1024 * 1024];
-        let encrypted = encrypt(&data).unwrap();
-        let decrypted = decrypt(&encrypted, &encrypted.key).unwrap();
+        let encrypted = encrypt(&data).expect("encryption should succeed");
+        let decrypted = decrypt(&encrypted, &encrypted.key).expect("decryption should succeed");
         assert_eq!(&*decrypted, &data[..]);
     }
 
     #[test]
     fn test_ps_cypher_error_display() {
         let data = b"test";
-        let encrypted = encrypt(data).unwrap();
-        let bad_key = hash(b"invalid_key").unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
+        let bad_key = hash(b"invalid_key").expect("hashing should succeed");
         let result = decrypt(&encrypted, &bad_key);
 
         if let Err(e) = result {
@@ -315,8 +317,8 @@ mod tests {
     #[test]
     fn test_ps_cypher_error_source() {
         let data = b"test";
-        let encrypted = encrypt(data).unwrap();
-        let bad_key = hash(b"invalid_key").unwrap();
+        let encrypted = encrypt(data).expect("encryption should succeed");
+        let bad_key = hash(b"invalid_key").expect("hashing should succeed");
         let result = decrypt(&encrypted, &bad_key);
 
         if let Err(e) = result {
