@@ -5,7 +5,7 @@ pub use ps_buffer::Buffer;
 
 use chacha20poly1305::aead::{Aead, KeyInit};
 use chacha20poly1305::ChaCha20Poly1305;
-use ps_deflate::{compress, decompress};
+use ps_compress::{compress, decompress_bounded};
 use ps_ecc::{decode, encode, Codeword, DecodeError};
 use ps_hash::{Hash, PARITY_SIZE};
 use ps_util::subarray;
@@ -99,7 +99,7 @@ pub fn decrypt(data: &[u8], key: &Hash) -> Result<Buffer, DecryptionError> {
         .decrypt(&nonce.into(), &ecc_decoded[..])
         .map_err(|_| DecryptionError::ChaChaError)?;
 
-    Ok(decompress(&compressed_data, out_size)?)
+    Ok(decompress_bounded(&compressed_data, out_size)?)
 }
 
 #[inline]

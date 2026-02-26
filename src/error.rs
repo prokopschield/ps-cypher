@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions)]
 
-use ps_deflate::PsDeflateError;
+use ps_compress::{CompressionError, DecompressionError};
 use ps_ecc::DecodeError;
 use ps_hash::HashError;
 use thiserror::Error;
@@ -9,22 +9,22 @@ use thiserror::Error;
 pub enum EncryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
     ChaChaError,
+    #[error("Compression error: {0}")]
+    CompressionError(#[from] CompressionError),
     #[error(transparent)]
     EccError(#[from] ps_ecc::EncodeError),
     #[error(transparent)]
     HashError(#[from] HashError),
-    #[error(transparent)]
-    PsDeflateError(#[from] PsDeflateError),
 }
 
 #[derive(Clone, Debug, Error)]
 pub enum DecryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
     ChaChaError,
+    #[error("Decompression error: {0}")]
+    DecompressionError(#[from] DecompressionError),
     #[error(transparent)]
     EccError(#[from] DecodeError),
-    #[error(transparent)]
-    PsDeflateError(#[from] PsDeflateError),
 }
 
 #[derive(Error, Debug, Clone)]
