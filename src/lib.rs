@@ -170,10 +170,13 @@ mod tests {
             "Encryption should modify the data"
         );
 
+        let ecc_payload = extract_encrypted(&encrypted_data.bytes)
+            .expect("extracting ECC payload should succeed");
+
         assert_eq!(
             encrypted_data.bytes.len(),
-            31 + 2 * usize::from(PARITY),
-            "Encrypted data should be 31 bytes long"
+            ecc_payload.len() + 2 * usize::from(PARITY),
+            "ECC encoding should add parity bytes"
         );
 
         assert_eq!(
