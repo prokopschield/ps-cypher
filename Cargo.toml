@@ -14,7 +14,7 @@ ps-ecc = "0.1.0-8"
 ps-hash = "0.1.0-24"
 ps-pint16 = "0.1.0-4"
 ps-util = "0.1.0-6"
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 
 [profile.dev]
 opt-level = 3
