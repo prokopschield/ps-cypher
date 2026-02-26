@@ -8,23 +8,23 @@ use thiserror::Error;
 #[derive(Clone, Debug, Error)]
 pub enum EncryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
-    ChaChaError,
+    ChaCha,
     #[error("Compression error: {0}")]
-    CompressionError(#[from] CompressionError),
+    Compression(#[from] CompressionError),
     #[error(transparent)]
-    EccError(#[from] ps_ecc::EncodeError),
+    Ecc(#[from] ps_ecc::EncodeError),
     #[error(transparent)]
-    HashError(#[from] HashError),
+    Hash(#[from] HashError),
 }
 
 #[derive(Clone, Debug, Error)]
 pub enum DecryptionError {
     #[error("Encryption/Decryption failure (from chacha20poly1305)")]
-    ChaChaError,
+    ChaCha,
     #[error("Decompression error: {0}")]
-    DecompressionError(#[from] DecompressionError),
+    Decompression(#[from] DecompressionError),
     #[error(transparent)]
-    EccError(#[from] DecodeError),
+    Ecc(#[from] DecodeError),
 }
 
 #[derive(Error, Debug, Clone)]

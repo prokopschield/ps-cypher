@@ -68,7 +68,7 @@ pub fn encrypt(data: &[u8]) -> Result<Encrypted, EncryptionError> {
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let encrypted_data = chacha
         .encrypt(&nonce.into(), compressed_data.as_ref())
-        .map_err(|_| EncryptionError::ChaChaError)?;
+        .map_err(|_| EncryptionError::ChaCha)?;
 
     let bytes = encode(&encrypted_data, PARITY)?;
     let hash = Hash::hash(&bytes)?;
@@ -97,7 +97,7 @@ pub fn decrypt(data: &[u8], key: &Hash) -> Result<Buffer, DecryptionError> {
     let chacha = ChaCha20Poly1305::new(&encryption_key.into());
     let compressed_data = chacha
         .decrypt(&nonce.into(), &ecc_decoded[..])
-        .map_err(|_| DecryptionError::ChaChaError)?;
+        .map_err(|_| DecryptionError::ChaCha)?;
 
     Ok(decompress_bounded(&compressed_data, out_size)?)
 }
@@ -236,7 +236,7 @@ mod tests {
         let result = decrypt(&encrypted, &different_key);
         assert!(result.is_err());
         match result.unwrap_err() {
-            DecryptionError::ChaChaError => {} // Expected error type.
+            DecryptionError::ChaCha => {} // Expected error type.
             _ => panic!("Unexpected error type"),
         }
     }
