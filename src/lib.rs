@@ -146,6 +146,7 @@ impl Deref for Encrypted {
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
+#[allow(clippy::panic)]
 #[allow(clippy::unwrap_used)]
 mod tests {
     use ps_buffer::ToBuffer;

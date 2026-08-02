@@ -16,6 +16,16 @@ ps-pint16 = "0.1.0-4"
 ps-util = "0.1.0-6"
 thiserror = "2.0.18"
 
+[lints.clippy]
+expect_used = "deny"
+nursery = { level = "warn", priority = -1 }
+panic = "deny"
+pedantic = { level = "warn", priority = -1 }
+unwrap_used = "deny"
+
+[lints.rust]
+unsafe_code = "forbid"
+
 [profile.dev]
 opt-level = 3
 
